@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Google Stitch UI/UX Workshop – Evaluator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--b:#4285F4;--r:#EA4335;--y:#FBBC04;--g:#34A853;--ink:#202124;--mut:#5f6368;--line:#e0e3e7;--bg:#f6f8fc}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.4}
+header{background:#fff;border-bottom:4px solid;border-image:linear-gradient(90deg,var(--b) 25%,var(--r) 25% 50%,var(--y) 50% 75%,var(--g) 75%) 1;padding:18px 16px}
+h1{margin:0;font-size:1.3rem}header p{margin:4px 0 0;color:var(--mut);font-size:.9rem}
+main{max-width:860px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+label{font-size:.8rem;color:var(--mut);display:block;margin-bottom:3px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #cfd4da;border-radius:8px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--b);border-color:transparent}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ch h2{margin:0;font-size:1.05rem}.sub{font-weight:700;padding:2px 10px;border-radius:99px;color:#fff;font-size:.85rem}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row .t{flex:1 1 260px}.row b{font-size:.92rem}.row small{display:block;color:var(--mut);font-size:.78rem}
+.seg{display:flex;gap:4px}
+.seg button{min-width:48px;padding:8px 10px;border:1px solid #cfd4da;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:.85rem}
+.seg button.on{color:#fff;border-color:transparent}
+.total{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 16px;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+.total .in{max-width:860px;margin:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.big{font-size:1.5rem;font-weight:800}.band{color:var(--mut);font-size:.9rem}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:10px 14px;border:0;border-radius:99px;font:inherit;font-weight:600;cursor:pointer;background:var(--b);color:#fff}
+.btn.alt{background:#fff;color:var(--b);border:1px solid var(--b)}.btn.red{background:#fff;color:var(--r);border:1px solid var(--r)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+.sc{overflow-x:auto}.err{color:var(--r);font-size:.85rem;min-height:1.2em;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Google Stitch UI/UX Workshop – Evaluation Sheet</h1>
+  <p>Challenge: Travel planning platform (explore, itineraries, budgets, favourites) · 4 categories × 5 marks = 20</p>
+</header>
+<main>
+  <section class="card">
+    <div class="grid">
+      <div><label for="name">Name *</label><input id="name" placeholder="Participant name"></div>
+      <div><label for="branch">Branch *</label><input id="branch" placeholder="e.g. CSE"></div>
+      <div><label for="sem">Semester *</label>
+        <select id="sem"><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+      <div><label for="ev">Evaluator (optional)</label><input id="ev" placeholder="Judge name"></div>
+    </div>
+    <p class="err" id="err"></p>
+  </section>
+
+  <div id="cats"></div>
+
+  <section class="card">
+    <label for="rem">Remarks / feedback</label>
+    <textarea id="rem" rows="3" placeholder="Strengths, what to improve…"></textarea>
+  </section>
+
+  <section class="card">
+    <div class="ch"><h2>Leaderboard</h2><div class="btns"><button class="btn alt" id="csv">Download CSV</button><button class="btn red" id="clr">Clear</button></div></div>
+    <div class="sc"><table><thead><tr><th>#</th><th>Name</th><th>Branch</th><th>Sem</th><th>Cre</th><th>UI</th><th>UX</th><th>Prompt</th><th>Total</th></tr></thead><tbody id="lb"></tbody></table></div>
+    <p class="band" id="lbn"></p>
+  </section>
+</main>
+
+<div class="total"><div class="in">
+  <div><span class="big" id="tot">0</span><span class="big" style="color:var(--mut)"> / 20</span><div class="band" id="band">Not scored yet</div></div>
+  <div class="btns">
+    <button class="btn alt" id="rst">Reset scores</button>
+    <button class="btn alt" id="add">Save to leaderboard</button>
+    <button class="btn" id="pdf">Export PDF</button>
+  </div>
+</div></div>
+
+<script>
+const CATS=[
+ {n:'Creativity',c:'#4285F4',i:[
+  ['Originality of concept','A fresh angle on travel planning, not just a generic template'],
+  ['Standout features','Smart ideas such as AI suggestions, maps, weather or group trips'],
+  ['Brand & personality','App name, logo and identity that feel memorable'],
+  ['Fresh take on core needs','Explore, itinerary, budget and favourites solved in a new way'],
+  ['Delightful details','Illustrations, imagery and small touches that add charm']]},
+ {n:'UI Aesthetics',c:'#EA4335',i:[
+  ['Colour & mood','Palette that suits travel and feels inviting'],
+  ['Typography','Clear hierarchy, readable sizes, consistent fonts'],
+  ['Imagery & icons','Good destination visuals, cards and icon usage'],
+  ['Layout & spacing','Alignment, whitespace and card structure are tidy'],
+  ['Consistency','Same look and feel across all screens']]},
+ {n:'User Experience',c:'#FBBC04',i:[
+  ['Explore places','Easy search, categories and destination details'],
+  ['Itinerary planning','Day-wise plan, adding and arranging activities is clear'],
+  ['Budget management','Set a budget, track expenses, see a clear summary'],
+  ['Favourites','Simple way to save and revisit favourite destinations'],
+  ['Flow & mobile usability','Smooth navigation between screens, thumb-friendly layout']]},
+ {n:'Prompt Engineering',c:'#34A853',i:[
+  ['Clarity & specificity','Prompts name the screens, elements and user goals'],
+  ['Requirement coverage','Prompts address all four needs: explore, plan, budget, save'],
+  ['Iterative approach','Built step by step and refined based on the output'],
+  ['Constraints & consistency','Asked to keep the style, colours and components consistent'],
+  ['Prompt enhancements','Used techniques from the workshop (context, style, refinement)']]}
+];
+const OPTS=[0,0.5,1];
+let S=CATS.map(c=>c.i.map(()=>null));
+const $=id=>document.getElementById(id);
+const sub=k=>S[k].reduce((a,v)=>a+(v||0),0);
+const total=()=>CATS.reduce((a,_,k)=>a+sub(k),0);
+const band=t=>t>=18?'Outstanding':t>=15?'Excellent':t>=12?'Good':t>=8?'Fair':'Needs improvement';
+const fmt=n=>Number.isInteger(n)?n:n.toFixed(1);
+
+function render(){
+  $('cats').innerHTML=CATS.map((c,k)=>`<section class="card">
+    <div class="ch"><h2>${c.n}</h2><span class="sub" id="s${k}" style="background:${c.c}">0 / 5</span></div>
+    ${c.i.map((it,j)=>`<div class="row"><div class="t"><b>${it[0]}</b><small>${it[1]}</small></div>
+      <div class="seg">${OPTS.map(o=>`<button data-k="${k}" data-j="${j}" data-o="${o}" style="--c:${c.c}">${o}</button>`).join('')}</div></div>`).join('')}
+  </section>`).join('');
+  update();
+}
+function update(){
+  document.querySelectorAll('.seg button').forEach(b=>{
+    const on=S[b.dataset.k][b.dataset.j]===+b.dataset.o;
+    b.classList.toggle('on',on);b.style.background=on?b.style.getPropertyValue('--c'):'#fff';
+  });
+  CATS.forEach((_,k)=>$('s'+k).textContent=fmt(sub(k))+' / 5');
+  const t=total();$('tot').textContent=fmt(t);
+  $('band').textContent=S.flat().some(v=>v!==null)?band(t):'Not scored yet';
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.seg button');if(!b)return;
+  S[b.dataset.k][b.dataset.j]=+b.dataset.o;update();
+});
+
+function info(){
+  return{name:$('name').value.trim(),branch:$('branch').value.trim(),sem:$('sem').value,ev:$('ev').value.trim(),rem:$('rem').value.trim()};
+}
+function valid(){
+  const i=info();
+  if(!i.name||!i.branch||!i.sem){$('err').textContent='Please fill in name, branch and semester.';return false}
+  if(S.flat().some(v=>v===null)){$('err').textContent='Please score every criterion (tap 0, 0.5 or 1).';return false}
+  $('err').textContent='';return true;
+}
+
+/* Leaderboard */
+let LB=[];
+try{LB=JSON.parse(localStorage.getItem('stitch_lb')||'[]')}catch(e){}
+function saveLB(){try{localStorage.setItem('stitch_lb',JSON.stringify(LB))}catch(e){}}
+function renderLB(){
+  const rows=[...LB].sort((a,b)=>b.total-a.total);
+  $('lb').innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.name)}</td><td>${esc(r.branch)}</td><td>${esc(r.sem)}</td>${r.cat.map(v=>`<td>${fmt(v)}</td>`).join('')}<td><b>${fmt(r.total)}</b></td></tr>`).join('');
+  $('lbn').textContent=rows.length?'':'No entries yet. Score a participant and tap “Save to leaderboard”.';
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('add').onclick=()=>{
+  if(!valid())return;const i=info();
+  LB.push({name:i.name,branch:i.branch,sem:i.sem,cat:CATS.map((_,k)=>sub(k)),total:total()});
+  saveLB();renderLB();
+  $('err').style.color='var(--g)';$('err').textContent='Saved to leaderboard.';setTimeout(()=>{$('err').textContent='';$('err').style.color=''},2000);
+};
+$('clr').onclick=()=>{if(confirm('Clear the whole leaderboard?')){LB=[];saveLB();renderLB()}};
+$('rst').onclick=()=>{S=CATS.map(c=>c.i.map(()=>null));['name','branch','sem','ev','rem'].forEach(id=>$(id).value='');$('err').textContent='';update()};
+$('csv').onclick=()=>{
+  const rows=[['Rank','Name','Branch','Sem','Creativity','UI Aesthetics','User Experience','Prompt Engineering','Total']];
+  [...LB].sort((a,b)=>b.total-a.total).forEach((r,i)=>rows.push([i+1,r.name,r.branch,r.sem,...r.cat,r.total]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='stitch-leaderboard.csv';a.click();
+};
+
+/* PDF */
+$('pdf').onclick=()=>{
+  if(!valid())return;
+  if(!window.jspdf){window.print();return}
+  const i=info(),t=total(),doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=16;let y=20;
+  const hex=h=>[1,3,5].map(p=>parseInt(h.slice(p,p+2),16));
+  const need=h=>{if(y+h>280){doc.addPage();y=20}};
+  [['#4285F4'],['#EA4335'],['#FBBC04'],['#34A853']].forEach((c,k)=>{doc.setFillColor(...hex(c[0]));doc.rect(k*W/4,0,W/4,4,'F')});
+  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.text('Google Stitch UI/UX Workshop',M,y);y+=7;
+  doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(95);doc.text('Evaluation Report - Travel planning app challenge',M,y);y+=9;
+  doc.setTextColor(32);doc.setFontSize(11);
+  doc.text(`Name: ${i.name}`,M,y);doc.text(`Branch: ${i.branch}`,100,y);doc.text(`Semester: ${i.sem}`,160,y);y+=6;
+  if(i.ev){doc.text(`Evaluator: ${i.ev}`,M,y);y+=6}
+  doc.text(`Date: ${new Date().toLocaleDateString()}`,M,y);y+=9;
+  CATS.forEach((c,k)=>{
+    need(14+c.i.length*6);
+    doc.setFillColor(...hex(c.c));doc.roundedRect(M,y-5,W-2*M,8,2,2,'F');
+    doc.setTextColor(255);doc.setFont('helvetica','bold');doc.text(c.n,M+3,y);doc.text(`${fmt(sub(k))} / 5`,W-M-3,y,{align:'right'});y+=8;
+    doc.setTextColor(32);doc.setFont('helvetica','normal');doc.setFontSize(10);
+    c.i.forEach((it,j)=>{doc.text(it[0],M+3,y);doc.text(`${fmt(S[k][j])} / 1`,W-M-3,y,{align:'right'});y+=6});
+    doc.setFontSize(11);y+=3;
+  });
+  need(30);
+  doc.setDrawColor(200);doc.line(M,y,W-M,y);y+=8;
+  doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text(`Total: ${fmt(t)} / 20`,M,y);
+  doc.text(band(t),W-M,y,{align:'right'});y+=9;
+  if(i.rem){doc.setFontSize(11);doc.text('Remarks',M,y);y+=6;doc.setFont('helvetica','normal');
+    doc.splitTextToSize(i.rem,W-2*M).forEach(l=>{need(6);doc.text(l,M,y);y+=5.5})}
+  doc.save(`${i.name.replace(/\W+/g,'_')}_Stitch_Evaluation.pdf`);
+};
+
+render();renderLB();
+</script>
+</body>
+</html>
